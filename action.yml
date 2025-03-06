@@ -30,20 +30,5 @@ inputs:
     required: true
 
 runs: 
-  using: "composite"
-  steps:
-    - uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4.2.0
-      with:
-        node-version: 18
-
-    - name: Install Node.js dependencies
-      shell: bash
-      run: |
-        cd ${{ github.action_path }}
-        npm install
-
-    - name: Check for approvals
-      shell: bash
-      with:
-        token: ${{ inputs.token }}
-      run: node "${{ github.action_path }}/checkApprovals.js"
+  using: node18
+  main: checkApprovals.js
