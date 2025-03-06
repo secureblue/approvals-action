@@ -44,4 +44,6 @@ runs:
 
     - name: Check for approvals
       shell: bash
+      with:
+        token: ${{ inputs.token }}
       run: node "${{ github.action_path }}/checkApprovals.js"
