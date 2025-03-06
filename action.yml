@@ -31,4 +31,4 @@ inputs:
 
 runs: 
   using: node20
-  main: checkApprovals.js
+  main: dist/index.js
