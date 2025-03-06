@@ -38,7 +38,9 @@ runs:
         node-version: 16
 
     - name: Install Node.js dependencies
+      shell: bash
       run: npm install
 
     - name: Check for approvals
+      shell: bash
       run: node checkApprovals.js
