@@ -31821,58 +31821,86 @@ module.exports = parseParams
 /******/ 	}
 /******/ 	
 /************************************************************************/
+/******/ 	/* webpack/runtime/compat get default export */
+/******/ 	(() => {
+/******/ 		// getDefaultExport function for compatibility with non-harmony modules
+/******/ 		__nccwpck_require__.n = (module) => {
+/******/ 			var getter = module && module.__esModule ?
+/******/ 				() => (module['default']) :
+/******/ 				() => (module);
+/******/ 			__nccwpck_require__.d(getter, { a: getter });
+/******/ 			return getter;
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/define property getters */
+/******/ 	(() => {
+/******/ 		// define getter functions for harmony exports
+/******/ 		__nccwpck_require__.d = (exports, definition) => {
+/******/ 			for(var key in definition) {
+/******/ 				if(__nccwpck_require__.o(definition, key) && !__nccwpck_require__.o(exports, key)) {
+/******/ 					Object.defineProperty(exports, key, { enumerable: true, get: definition[key] });
+/******/ 				}
+/******/ 			}
+/******/ 		};
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/hasOwnProperty shorthand */
+/******/ 	(() => {
+/******/ 		__nccwpck_require__.o = (obj, prop) => (Object.prototype.hasOwnProperty.call(obj, prop))
+/******/ 	})();
+/******/ 	
+/******/ 	/* webpack/runtime/make namespace object */
+/******/ 	(() => {
+/******/ 		// define __esModule on exports
+/******/ 		__nccwpck_require__.r = (exports) => {
+/******/ 			if(typeof Symbol !== 'undefined' && Symbol.toStringTag) {
+/******/ 				Object.defineProperty(exports, Symbol.toStringTag, { value: 'Module' });
+/******/ 			}
+/******/ 			Object.defineProperty(exports, '__esModule', { value: true });
+/******/ 		};
+/******/ 	})();
+/******/ 	
 /******/ 	/* webpack/runtime/compat */
 /******/ 	
 /******/ 	if (typeof __nccwpck_require__ !== 'undefined') __nccwpck_require__.ab = __dirname + "/";
 /******/ 	
 /************************************************************************/
 var __webpack_exports__ = {};
-// Copyright 2024 secureblue
-//
-// This file includes code from https://github.com/peternied/required-approval which is licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS"
-// BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language
-// governing permissions and limitations under the License.
+// This entry need to be wrapped in an IIFE because it need to be in strict mode.
+(() => {
+"use strict";
+__nccwpck_require__.r(__webpack_exports__);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0__ = __nccwpck_require__(2299);
+/* harmony import */ var _actions_core__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__nccwpck_require__.n(_actions_core__WEBPACK_IMPORTED_MODULE_0__);
+/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1__ = __nccwpck_require__(1847);
+/* harmony import */ var _actions_github__WEBPACK_IMPORTED_MODULE_1___default = /*#__PURE__*/__nccwpck_require__.n(_actions_github__WEBPACK_IMPORTED_MODULE_1__);
+/*
+ * Copyright 2025 Peter Neid
+ * Copyright 2025 The Secureblue Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ */
 
 
-const core = __nccwpck_require__(2299);
-const github = __nccwpck_require__(1847);
+
+
 
 async function run() {
-  const token = core.getInput('token', { required: true });
-  if (!token) {
-    core.setFailed(`Input parameter 'token' is required`);
-    return;
-  }
+  await validateInput()
 
-  const minRequiredStr = core.getInput('min-required', { required: true })
-  if (!minRequiredStr) {
-    core.setFailed(`Input parameter 'min-required' is required`);
-    return;
-  }
   const minRequired = parseInt(minRequiredStr, 10);
-
-  const pullRequestId = github.context.payload.pull_request?.number;
-  if (!pullRequestId) {
-    core.setFailed(`Unable to find associated pull request from the context: ${JSON.stringify(github.context)}`);
-    return;
-  }
-
-  const approversString = core.getInput('approvers', { required: true });
+  const approversString = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('approvers', { required: true });
   const approvers = approversString.split('\n').map(s => s.trim());
-
-  const client = github.getOctokit(token);
-  const allReviews = await client.paginate.iterator(client.rest.pulls.listReviews, {
-      pull_number: pullRequestId,
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
-      per_page: 100,
-  });
+  const allReviews = getReviews();
 
   let validApprovers = new Set();
   for await (const { data: reviews } of allReviews) {
@@ -31887,19 +31915,51 @@ async function run() {
   }
 
   if (validApprovers.size > 0) {
-    core.info(`Found approvals from ${[...validApprovers].join(', ')}`);
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Found approvals from ${[...validApprovers].join(', ')}`);
   } else {
-    core.info("No approvals found.")
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)("No approvals found.")
   }
 
   if (validApprovers.size < minRequired) {
-    core.setFailed(`Not enough approvals; has ${validApprovers.size} where ${minRequired} approvals are required.`);
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(`Not enough approvals; has ${validApprovers.size} where ${minRequired} approvals are required.`);
   } else {
-    core.info(`Meets minimum number of approvals requirement with ${validApprovers.size} approvals`);
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Meets minimum number of approvals requirement with ${validApprovers.size} approvals`);
+  }
+}
+
+async function getReviews() {
+  const client = (0,_actions_github__WEBPACK_IMPORTED_MODULE_1__.getOctokit)(token);
+  return await client.paginate.iterator(client.rest.pulls.listReviews, {
+      pull_number: pullRequestId,
+      owner: _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.repo.owner,
+      repo: _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.repo.repo,
+      per_page: 100,
+  });
+}
+
+async function validateInput() {
+  const token = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('token', { required: true });
+  if (!token) {
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(`Input parameter 'token' is required`);
+    return;
+  }
+
+  const minRequiredStr = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('min-required', { required: true })
+  if (!minRequiredStr) {
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(`Input parameter 'min-required' is required`);
+    return;
+  }
+
+  const pullRequestId = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload.pull_request?.number;
+  if (!pullRequestId) {
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(`Unable to find associated pull request from the context: ${JSON.stringify(_actions_github__WEBPACK_IMPORTED_MODULE_1__.context)}`);
+    return;
   }
 }
 
 run();
+})();
+
 module.exports = __webpack_exports__;
 /******/ })()
 ;
