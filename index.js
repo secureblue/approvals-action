@@ -18,35 +18,12 @@ import { getInput, setFailed, info } from "@actions/core";
 import { context, getOctokit } from "@actions/github";
 
 async function run() {
-  const token = getInput('token', { required: true });
-  if (!token) {
-    setFailed(`Input parameter 'token' is required`);
-    return;
-  }
+  await validateInput()
 
-  const minRequiredStr = getInput('min-required', { required: true })
-  if (!minRequiredStr) {
-    setFailed(`Input parameter 'min-required' is required`);
-    return;
-  }
   const minRequired = parseInt(minRequiredStr, 10);
-
-  const pullRequestId = context.payload.pull_request?.number;
-  if (!pullRequestId) {
-    setFailed(`Unable to find associated pull request from the context: ${JSON.stringify(context)}`);
-    return;
-  }
-
   const approversString = getInput('approvers', { required: true });
   const approvers = approversString.split('\n').map(s => s.trim());
-
-  const client = getOctokit(token);
-  const allReviews = await client.paginate.iterator(client.rest.pulls.listReviews, {
-      pull_number: pullRequestId,
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      per_page: 100,
-  });
+  const allReviews = getReviews();
 
   let validApprovers = new Set();
   for await (const { data: reviews } of allReviews) {
@@ -70,6 +47,36 @@ async function run() {
     setFailed(`Not enough approvals; has ${validApprovers.size} where ${minRequired} approvals are required.`);
   } else {
     info(`Meets minimum number of approvals requirement with ${validApprovers.size} approvals`);
+  }
+}
+
+async function getReviews() {
+  const client = getOctokit(token);
+  return await client.paginate.iterator(client.rest.pulls.listReviews, {
+      pull_number: pullRequestId,
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      per_page: 100,
+  });
+}
+
+async function validateInput() {
+  const token = getInput('token', { required: true });
+  if (!token) {
+    setFailed(`Input parameter 'token' is required`);
+    return;
+  }
+
+  const minRequiredStr = getInput('min-required', { required: true })
+  if (!minRequiredStr) {
+    setFailed(`Input parameter 'min-required' is required`);
+    return;
+  }
+
+  const pullRequestId = context.payload.pull_request?.number;
+  if (!pullRequestId) {
+    setFailed(`Unable to find associated pull request from the context: ${JSON.stringify(context)}`);
+    return;
   }
 }
 
