@@ -13,42 +13,8 @@
  * See the License for the specific language governing permissions and limitations under the License.
  */
 
-
-import { getInput, setFailed, info } from "@actions/core";
+import { getInput, info, setFailed } from "@actions/core";
 import { context, getOctokit } from "@actions/github";
-
-async function run() {
-  await validateInput()
-
-  const minRequired = parseInt(minRequiredStr, 10);
-  const approversString = getInput('approvers', { required: true });
-  const approvers = approversString.split('\n').map(s => s.trim());
-  const allReviews = getReviews();
-
-  let validApprovers = new Set();
-  for await (const { data: reviews } of allReviews) {
-      for (const review of reviews) {
-        const userId = review.user?.login;
-        if (review.state === 'APPROVED' && userId) {
-            if (approvers.includes(userId)) {
-                validApprovers.add(userId);
-            }
-        }
-     }
-  }
-
-  if (validApprovers.size > 0) {
-    info(`Found approvals from ${[...validApprovers].join(', ')}`);
-  } else {
-    info("No approvals found.")
-  }
-
-  if (validApprovers.size < minRequired) {
-    setFailed(`Not enough approvals; has ${validApprovers.size} where ${minRequired} approvals are required.`);
-  } else {
-    info(`Meets minimum number of approvals requirement with ${validApprovers.size} approvals`);
-  }
-}
 
 async function getReviews() {
   const client = getOctokit(token);
@@ -77,6 +43,39 @@ async function validateInput() {
   if (!pullRequestId) {
     setFailed(`Unable to find associated pull request from the context: ${JSON.stringify(context)}`);
     return;
+  }
+}
+
+async function run() {
+  await validateInput();
+
+  const minRequired = parseInt(minRequiredStr, 10);
+  const approversString = getInput('approvers', { required: true });
+  const approvers = approversString.split('\n').map(s => s.trim());
+  const allReviews = getReviews();
+
+  let validApprovers = new Set();
+  for await (const { data: reviews } of allReviews) {
+      for (const review of reviews) {
+        const userId = review.user?.login;
+        if (review.state === 'APPROVED' && userId) {
+            if (approvers.includes(userId)) {
+                validApprovers.add(userId);
+            }
+        }
+     }
+  }
+
+  if (validApprovers.size > 0) {
+    info(`Found approvals from ${[...validApprovers].join(', ')}`);
+  } else {
+    info("No approvals found.")
+  }
+
+  if (validApprovers.size < minRequired) {
+    setFailed(`Not enough approvals; has ${validApprovers.size} where ${minRequired} approvals are required.`);
+  } else {
+    info(`Meets minimum number of approvals requirement with ${validApprovers.size} approvals`);
   }
 }
 
