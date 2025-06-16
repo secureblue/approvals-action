@@ -14,37 +14,37 @@
  */
 
 
-const core = require("@actions/core");
-const github = require("@actions/github");
+import { getInput, setFailed, info } from "@actions/core";
+import { context, getOctokit } from "@actions/github";
 
 async function run() {
-  const token = core.getInput('token', { required: true });
+  const token = getInput('token', { required: true });
   if (!token) {
-    core.setFailed(`Input parameter 'token' is required`);
+    setFailed(`Input parameter 'token' is required`);
     return;
   }
 
-  const minRequiredStr = core.getInput('min-required', { required: true })
+  const minRequiredStr = getInput('min-required', { required: true })
   if (!minRequiredStr) {
-    core.setFailed(`Input parameter 'min-required' is required`);
+    setFailed(`Input parameter 'min-required' is required`);
     return;
   }
   const minRequired = parseInt(minRequiredStr, 10);
 
-  const pullRequestId = github.context.payload.pull_request?.number;
+  const pullRequestId = context.payload.pull_request?.number;
   if (!pullRequestId) {
-    core.setFailed(`Unable to find associated pull request from the context: ${JSON.stringify(github.context)}`);
+    setFailed(`Unable to find associated pull request from the context: ${JSON.stringify(context)}`);
     return;
   }
 
-  const approversString = core.getInput('approvers', { required: true });
+  const approversString = getInput('approvers', { required: true });
   const approvers = approversString.split('\n').map(s => s.trim());
 
-  const client = github.getOctokit(token);
+  const client = getOctokit(token);
   const allReviews = await client.paginate.iterator(client.rest.pulls.listReviews, {
       pull_number: pullRequestId,
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
+      owner: context.repo.owner,
+      repo: context.repo.repo,
       per_page: 100,
   });
 
@@ -61,15 +61,15 @@ async function run() {
   }
 
   if (validApprovers.size > 0) {
-    core.info(`Found approvals from ${[...validApprovers].join(', ')}`);
+    info(`Found approvals from ${[...validApprovers].join(', ')}`);
   } else {
-    core.info("No approvals found.")
+    info("No approvals found.")
   }
 
   if (validApprovers.size < minRequired) {
-    core.setFailed(`Not enough approvals; has ${validApprovers.size} where ${minRequired} approvals are required.`);
+    setFailed(`Not enough approvals; has ${validApprovers.size} where ${minRequired} approvals are required.`);
   } else {
-    core.info(`Meets minimum number of approvals requirement with ${validApprovers.size} approvals`);
+    info(`Meets minimum number of approvals requirement with ${validApprovers.size} approvals`);
   }
 }
 
