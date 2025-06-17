@@ -1,49 +1,58 @@
-// Copyright 2024 secureblue
-//
-// This file includes code from https://github.com/peternied/required-approval which is licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS"
-// BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the License for the specific language
-// governing permissions and limitations under the License.
+/*
+ * Copyright 2025 Peter Neid
+ * Copyright 2025 The Secureblue Authors
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software distributed under the License is
+ * distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and limitations under the License.
+ */
 
+import { getInput, info, setFailed } from "@actions/core";
+import { context, getOctokit } from "@actions/github";
 
-const core = require("@actions/core");
-const github = require("@actions/github");
-
-async function run() {
-  const token = core.getInput('token', { required: true });
-  if (!token) {
-    core.setFailed(`Input parameter 'token' is required`);
-    return;
-  }
-
-  const minRequiredStr = core.getInput('min-required', { required: true })
-  if (!minRequiredStr) {
-    core.setFailed(`Input parameter 'min-required' is required`);
-    return;
-  }
-  const minRequired = parseInt(minRequiredStr, 10);
-
-  const pullRequestId = github.context.payload.pull_request?.number;
-  if (!pullRequestId) {
-    core.setFailed(`Unable to find associated pull request from the context: ${JSON.stringify(github.context)}`);
-    return;
-  }
-
-  const approversString = core.getInput('approvers', { required: true });
-  const approvers = approversString.split('\n').map(s => s.trim());
-
-  const client = github.getOctokit(token);
-  const allReviews = await client.paginate.iterator(client.rest.pulls.listReviews, {
+async function getReviews() {
+  const client = getOctokit(token);
+  return await client.paginate.iterator(client.rest.pulls.listReviews, {
       pull_number: pullRequestId,
-      owner: github.context.repo.owner,
-      repo: github.context.repo.repo,
+      owner: context.repo.owner,
+      repo: context.repo.repo,
       per_page: 100,
   });
+}
+
+async function validateInput() {
+  const token = getInput('token', { required: true });
+  if (!token) {
+    setFailed(`Input parameter 'token' is required`);
+    return;
+  }
+
+  const minRequiredStr = getInput('min-required', { required: true })
+  if (!minRequiredStr) {
+    setFailed(`Input parameter 'min-required' is required`);
+    return;
+  }
+
+  const pullRequestId = context.payload.pull_request?.number;
+  if (!pullRequestId) {
+    setFailed(`Unable to find associated pull request from the context: ${JSON.stringify(context)}`);
+    return;
+  }
+}
+
+async function run() {
+  await validateInput();
+
+  const minRequired = parseInt(minRequiredStr, 10);
+  const approversString = getInput('approvers', { required: true });
+  const approvers = approversString.split('\n').map(s => s.trim());
+  const allReviews = getReviews();
 
   let validApprovers = new Set();
   for await (const { data: reviews } of allReviews) {
@@ -58,15 +67,15 @@ async function run() {
   }
 
   if (validApprovers.size > 0) {
-    core.info(`Found approvals from ${[...validApprovers].join(', ')}`);
+    info(`Found approvals from ${[...validApprovers].join(', ')}`);
   } else {
-    core.info("No approvals found.")
+    info("No approvals found.")
   }
 
   if (validApprovers.size < minRequired) {
-    core.setFailed(`Not enough approvals; has ${validApprovers.size} where ${minRequired} approvals are required.`);
+    setFailed(`Not enough approvals; has ${validApprovers.size} where ${minRequired} approvals are required.`);
   } else {
-    core.info(`Meets minimum number of approvals requirement with ${validApprovers.size} approvals`);
+    info(`Meets minimum number of approvals requirement with ${validApprovers.size} approvals`);
   }
 }
 
