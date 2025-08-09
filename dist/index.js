@@ -31893,40 +31893,6 @@ __nccwpck_require__.r(__webpack_exports__);
 
 
 
-
-async function run() {
-  await validateInput()
-
-  const minRequired = parseInt(minRequiredStr, 10);
-  const approversString = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('approvers', { required: true });
-  const approvers = approversString.split('\n').map(s => s.trim());
-  const allReviews = getReviews();
-
-  let validApprovers = new Set();
-  for await (const { data: reviews } of allReviews) {
-      for (const review of reviews) {
-        const userId = review.user?.login;
-        if (review.state === 'APPROVED' && userId) {
-            if (approvers.includes(userId)) {
-                validApprovers.add(userId);
-            }
-        }
-     }
-  }
-
-  if (validApprovers.size > 0) {
-    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Found approvals from ${[...validApprovers].join(', ')}`);
-  } else {
-    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)("No approvals found.")
-  }
-
-  if (validApprovers.size < minRequired) {
-    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(`Not enough approvals; has ${validApprovers.size} where ${minRequired} approvals are required.`);
-  } else {
-    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Meets minimum number of approvals requirement with ${validApprovers.size} approvals`);
-  }
-}
-
 async function getReviews() {
   const client = (0,_actions_github__WEBPACK_IMPORTED_MODULE_1__.getOctokit)(token);
   return await client.paginate.iterator(client.rest.pulls.listReviews, {
@@ -31954,6 +31920,50 @@ async function validateInput() {
   if (!pullRequestId) {
     (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(`Unable to find associated pull request from the context: ${JSON.stringify(_actions_github__WEBPACK_IMPORTED_MODULE_1__.context)}`);
     return;
+  }
+
+  const pullRequestCreator = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload.sender.login;  
+  if (!pullRequestCreator) {
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(`Unable to find associated pull request creator from the context: ${JSON.stringify(_actions_github__WEBPACK_IMPORTED_MODULE_1__.context)}`);
+    return;
+  }
+}
+
+async function run() {
+  await validateInput();
+  
+  const skipDependabot = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('skipDependabot', { required: false });
+  if (skipDependabot && pullRequestCreator =='dependabot[bot]') {
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)("Skipping dependabot PR.")
+    return;
+  }
+  const minRequired = parseInt(minRequiredStr, 10);
+  const approversString = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('approvers', { required: true });
+  const approvers = approversString.split('\n').map(s => s.trim());
+  const allReviews = await getReviews();
+
+  let validApprovers = new Set();
+  for await (const { data: reviews } of allReviews) {
+      for (const review of reviews) {
+        const userId = review.user?.login;
+        if (review.state === 'APPROVED' && userId) {
+            if (approvers.includes(userId)) {
+                validApprovers.add(userId);
+            }
+        }
+     }
+  }
+
+  if (validApprovers.size > 0) {
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Found approvals from ${[...validApprovers].join(', ')}`);
+  } else {
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)("No approvals found.")
+  }
+
+  if (validApprovers.size < minRequired) {
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(`Not enough approvals; has ${validApprovers.size} where ${minRequired} approvals are required.`);
+  } else {
+    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)(`Meets minimum number of approvals requirement with ${validApprovers.size} approvals`);
   }
 }
 
