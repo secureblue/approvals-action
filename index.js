@@ -55,7 +55,7 @@ async function validateInput() {
 async function run() {
   await validateInput();
   
-  const skipDependabot = getInput('skipDependabot', { required: false });
+  const skipDependabot = getInput('skip-dependabot', { required: false });
   if (skipDependabot && pullRequestCreator =='dependabot[bot]') {
     info("Skipping dependabot PR.")
     return;

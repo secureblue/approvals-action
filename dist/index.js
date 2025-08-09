@@ -31932,7 +31932,7 @@ async function validateInput() {
 async function run() {
   await validateInput();
   
-  const skipDependabot = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('skipDependabot', { required: false });
+  const skipDependabot = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('skip-dependabot', { required: false });
   if (skipDependabot && pullRequestCreator =='dependabot[bot]') {
     (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)("Skipping dependabot PR.")
     return;
@@ -31968,6 +31968,7 @@ async function run() {
 }
 
 run();
+
 })();
 
 module.exports = __webpack_exports__;
