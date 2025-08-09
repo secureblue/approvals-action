@@ -16,16 +16,6 @@
 import { getInput, info, setFailed } from "@actions/core";
 import { context, getOctokit } from "@actions/github";
 
-async function getReviews(pullRequestId) {
-  const client = getOctokit(token);
-  return await client.paginate.iterator(client.rest.pulls.listReviews, {
-      pull_number: pullRequestId,
-      owner: context.repo.owner,
-      repo: context.repo.repo,
-      per_page: 100,
-  });
-}
-
 async function run() {
   const token = getInput('token', { required: true });
   if (!token) {
@@ -53,7 +43,13 @@ async function run() {
   const minRequired = parseInt(minRequiredStr, 10);
   const approversString = getInput('approvers', { required: true });
   const approvers = approversString.split('\n').map(s => s.trim());
-  const allReviews = await getReviews(pullRequestId);
+  const client = getOctokit(token);
+  const allReviews= await client.paginate.iterator(client.rest.pulls.listReviews, {
+      pull_number: pullRequestId,
+      owner: context.repo.owner,
+      repo: context.repo.repo,
+      per_page: 100,
+  });
 
   let validApprovers = new Set();
   for await (const { data: reviews } of allReviews) {
