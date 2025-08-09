@@ -31893,7 +31893,7 @@ __nccwpck_require__.r(__webpack_exports__);
 
 
 
-async function getReviews() {
+async function getReviews(pullRequestId) {
   const client = (0,_actions_github__WEBPACK_IMPORTED_MODULE_1__.getOctokit)(token);
   return await client.paginate.iterator(client.rest.pulls.listReviews, {
       pull_number: pullRequestId,
@@ -31903,7 +31903,7 @@ async function getReviews() {
   });
 }
 
-async function validateInput() {
+async function run() {
   const token = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('token', { required: true });
   if (!token) {
     (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(`Input parameter 'token' is required`);
@@ -31921,11 +31921,7 @@ async function validateInput() {
     (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(`Unable to find associated pull request from the context: ${JSON.stringify(_actions_github__WEBPACK_IMPORTED_MODULE_1__.context)}`);
     return;
   }
-}
 
-async function run() {
-  await validateInput();
-  
   const skipDependabot = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('skip-dependabot', { required: false });
   if (skipDependabot && _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload.sender.login === 'dependabot[bot]') {
     (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)("Skipping dependabot PR.")
@@ -31934,7 +31930,7 @@ async function run() {
   const minRequired = parseInt(minRequiredStr, 10);
   const approversString = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('approvers', { required: true });
   const approvers = approversString.split('\n').map(s => s.trim());
-  const allReviews = await getReviews();
+  const allReviews = await getReviews(pullRequestId);
 
   let validApprovers = new Set();
   for await (const { data: reviews } of allReviews) {

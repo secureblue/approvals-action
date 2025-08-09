@@ -16,7 +16,7 @@
 import { getInput, info, setFailed } from "@actions/core";
 import { context, getOctokit } from "@actions/github";
 
-async function getReviews() {
+async function getReviews(pullRequestId) {
   const client = getOctokit(token);
   return await client.paginate.iterator(client.rest.pulls.listReviews, {
       pull_number: pullRequestId,
@@ -26,7 +26,7 @@ async function getReviews() {
   });
 }
 
-async function validateInput() {
+async function run() {
   const token = getInput('token', { required: true });
   if (!token) {
     setFailed(`Input parameter 'token' is required`);
@@ -44,11 +44,7 @@ async function validateInput() {
     setFailed(`Unable to find associated pull request from the context: ${JSON.stringify(context)}`);
     return;
   }
-}
 
-async function run() {
-  await validateInput();
-  
   const skipDependabot = getInput('skip-dependabot', { required: false });
   if (skipDependabot && context.payload.sender.login === 'dependabot[bot]') {
     info("Skipping dependabot PR.")
@@ -57,7 +53,7 @@ async function run() {
   const minRequired = parseInt(minRequiredStr, 10);
   const approversString = getInput('approvers', { required: true });
   const approvers = approversString.split('\n').map(s => s.trim());
-  const allReviews = await getReviews();
+  const allReviews = await getReviews(pullRequestId);
 
   let validApprovers = new Set();
   for await (const { data: reviews } of allReviews) {
