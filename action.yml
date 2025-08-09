@@ -30,6 +30,10 @@ inputs:
   min-required:
     description: 'The minimum number of approvals, e.g. 2'
     required: true
+  skipDependabot:
+    description: 'Whether to require approvals for dependabot PRs'
+    default: false
+    required: false
 
 runs: 
   using: node20

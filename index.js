@@ -44,15 +44,26 @@ async function validateInput() {
     setFailed(`Unable to find associated pull request from the context: ${JSON.stringify(context)}`);
     return;
   }
+
+  const pullRequestCreator = context.payload.sender.login;  
+  if (!pullRequestCreator) {
+    setFailed(`Unable to find associated pull request creator from the context: ${JSON.stringify(context)}`);
+    return;
+  }
 }
 
 async function run() {
   await validateInput();
-
+  
+  const skipDependabot = getInput('skipDependabot', { required: false });
+  if (skipDependabot && pullRequestCreator =='dependabot[bot]') {
+    info("Skipping dependabot PR.")
+    return;
+  }
   const minRequired = parseInt(minRequiredStr, 10);
   const approversString = getInput('approvers', { required: true });
   const approvers = approversString.split('\n').map(s => s.trim());
-  const allReviews = getReviews();
+  const allReviews = await getReviews();
 
   let validApprovers = new Set();
   for await (const { data: reviews } of allReviews) {
