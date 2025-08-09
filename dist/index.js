@@ -31893,16 +31893,6 @@ __nccwpck_require__.r(__webpack_exports__);
 
 
 
-async function getReviews(pullRequestId) {
-  const client = (0,_actions_github__WEBPACK_IMPORTED_MODULE_1__.getOctokit)(token);
-  return await client.paginate.iterator(client.rest.pulls.listReviews, {
-      pull_number: pullRequestId,
-      owner: _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.repo.owner,
-      repo: _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.repo.repo,
-      per_page: 100,
-  });
-}
-
 async function run() {
   const token = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('token', { required: true });
   if (!token) {
@@ -31930,7 +31920,13 @@ async function run() {
   const minRequired = parseInt(minRequiredStr, 10);
   const approversString = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('approvers', { required: true });
   const approvers = approversString.split('\n').map(s => s.trim());
-  const allReviews = await getReviews(pullRequestId);
+  const client = (0,_actions_github__WEBPACK_IMPORTED_MODULE_1__.getOctokit)(token);
+  const allReviews= await client.paginate.iterator(client.rest.pulls.listReviews, {
+      pull_number: pullRequestId,
+      owner: _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.repo.owner,
+      repo: _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.repo.repo,
+      per_page: 100,
+  });
 
   let validApprovers = new Set();
   for await (const { data: reviews } of allReviews) {
