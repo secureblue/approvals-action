@@ -44,19 +44,13 @@ async function validateInput() {
     setFailed(`Unable to find associated pull request from the context: ${JSON.stringify(context)}`);
     return;
   }
-
-  const pullRequestCreator = context.payload.sender.login;  
-  if (!pullRequestCreator) {
-    setFailed(`Unable to find associated pull request creator from the context: ${JSON.stringify(context)}`);
-    return;
-  }
 }
 
 async function run() {
   await validateInput();
   
   const skipDependabot = getInput('skip-dependabot', { required: false });
-  if (skipDependabot && pullRequestCreator =='dependabot[bot]') {
+  if (skipDependabot && context.payload.sender.login === 'dependabot[bot]') {
     info("Skipping dependabot PR.")
     return;
   }

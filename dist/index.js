@@ -31921,19 +31921,13 @@ async function validateInput() {
     (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(`Unable to find associated pull request from the context: ${JSON.stringify(_actions_github__WEBPACK_IMPORTED_MODULE_1__.context)}`);
     return;
   }
-
-  const pullRequestCreator = _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload.sender.login;  
-  if (!pullRequestCreator) {
-    (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.setFailed)(`Unable to find associated pull request creator from the context: ${JSON.stringify(_actions_github__WEBPACK_IMPORTED_MODULE_1__.context)}`);
-    return;
-  }
 }
 
 async function run() {
   await validateInput();
   
   const skipDependabot = (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.getInput)('skip-dependabot', { required: false });
-  if (skipDependabot && pullRequestCreator =='dependabot[bot]') {
+  if (skipDependabot && _actions_github__WEBPACK_IMPORTED_MODULE_1__.context.payload.sender.login === 'dependabot[bot]') {
     (0,_actions_core__WEBPACK_IMPORTED_MODULE_0__.info)("Skipping dependabot PR.")
     return;
   }
